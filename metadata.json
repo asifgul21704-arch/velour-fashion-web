@@ -1,0 +1,6 @@
+{
+  "name": "VELOUR Fashion",
+  "description": "Premium luxury fashion e-commerce platform featuring contemporary essentials for women and men, real-time cart, wishlist, secure checkout, and complete admin management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

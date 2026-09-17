@@ -1,0 +1,924 @@
+{
+  "users": [
+    {
+      "id": "usr-admin-01",
+      "name": "Velour Administrator",
+      "email": "admin@velour.com",
+      "passwordHash": "$2b$10$NXo17Zl.6rdA1R0ak8e9f.vfbRjK.3tug/vXJ/oQzInPOf8ptmqOW",
+      "role": "admin",
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.422Z",
+      "updatedAt": "2026-09-15T07:18:30.422Z"
+    },
+    {
+      "name": "Eleanor Vance",
+      "email": "customer@velour.com",
+      "passwordHash": "$2b$10$q5WMVhB6AjgqPccvRrtr7OFfYOoJMjPfVhyjcTbovQE7qZvkr5mKi",
+      "role": "user",
+      "phone": "+1 (555) 234-5678",
+      "address": "450 Park Avenue, Apt 12B",
+      "city": "New York",
+      "country": "USA",
+      "isActive": true,
+      "id": "usr-1789457375473-dymzz",
+      "createdAt": "2026-09-15T07:29:35.473Z",
+      "updatedAt": "2026-09-15T07:29:35.473Z"
+    },
+    {
+      "id": "usr-admin-01",
+      "name": "Velour Administrator",
+      "email": "admin@gmail.com",
+      "passwordHash": "$2b$10$v7/WsmwSZ3cdlAdnYgeyQuw.wG7HxYhdov6S8/q/xCBRBSi/h1Bzy",
+      "role": "admin",
+      "isActive": true,
+      "createdAt": "2026-09-15T07:37:39.226Z",
+      "updatedAt": "2026-09-15T07:37:39.226Z"
+    },
+    {
+      "name": "Eleanor Vance",
+      "email": "client.velour@gmail.com",
+      "passwordHash": "",
+      "googleId": "google-oauth-demo-id-883492",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80",
+      "role": "user",
+      "isActive": true,
+      "id": "usr-1789459063634-be3r6",
+      "createdAt": "2026-09-15T07:57:43.634Z",
+      "updatedAt": "2026-09-15T07:57:43.634Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-w-01",
+      "name": "Sateen Bias-Cut Evening Gown",
+      "slug": "sateen-bias-cut-evening-gown",
+      "description": "An architectural evening silhouette cut on the bias from double-faced silk sateen. Features a graceful cowl neckline, fluid drape, and clean invisible finish.",
+      "price": 340,
+      "salePrice": 290,
+      "images": [
+        "https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=1200&q=85",
+        "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=1200&q=85"
+      ],
+      "category": "Dresses",
+      "gender": "women",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Noir Black",
+        "Champagne",
+        "Bordeaux"
+      ],
+      "stock": 13,
+      "sku": "VEL-W-DRS-01",
+      "brand": "VELOUR Atelier",
+      "featured": true,
+      "newArrival": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T08:07:31.260Z"
+    },
+    {
+      "id": "prod-w-02",
+      "name": "Double-Breasted Cashmere Trench",
+      "slug": "double-breasted-cashmere-trench",
+      "description": "Crafted from ultra-soft brushed Italian cashmere blend. Hand-finished horn buttons, raglan sleeve drape, storm flap detailing, and a detachable cinched waist belt.",
+      "price": 580,
+      "images": [
+        "https://images.unsplash.com/photo-1544441893-675973e31985?w=1200&q=85",
+        "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=1200&q=85"
+      ],
+      "category": "Jackets",
+      "gender": "women",
+      "sizes": [
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Camel",
+        "Charcoal",
+        "Ecru"
+      ],
+      "stock": 8,
+      "sku": "VEL-W-COT-02",
+      "brand": "VELOUR Atelier",
+      "featured": true,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-w-03",
+      "name": "Fine Gauge Merino Turtleneck",
+      "slug": "fine-gauge-merino-turtleneck",
+      "description": "Spun from extra-fine 19.5-micron Australian merino wool. Designed with a close second-skin fit, ribbed cuffs, and an elongated collar that can be folded or slouched.",
+      "price": 165,
+      "salePrice": 145,
+      "images": [
+        "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=1200&q=85",
+        "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=1200&q=85"
+      ],
+      "category": "Tops",
+      "gender": "women",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Ivory",
+        "Midnight",
+        "Olive"
+      ],
+      "stock": 22,
+      "sku": "VEL-W-TOP-03",
+      "brand": "VELOUR Studio",
+      "featured": false,
+      "newArrival": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-w-04",
+      "name": "Pleated Wide-Leg Wool Trousers",
+      "slug": "pleated-wide-leg-wool-trousers",
+      "description": "High-waisted tailored trousers featuring deep front double pleats, angled side pockets, and an elongated wide-leg silhouette that pairs effortlessly with tailoring or knitwear.",
+      "price": 240,
+      "images": [
+        "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1200&q=85",
+        "https://images.unsplash.com/photo-1551803091-e20673f15770?w=1200&q=85"
+      ],
+      "category": "Trousers",
+      "gender": "women",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Stone Grey",
+        "Black",
+        "Parchment"
+      ],
+      "stock": 18,
+      "sku": "VEL-W-TRS-04",
+      "brand": "VELOUR Studio",
+      "featured": true,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-w-05",
+      "name": "Sculpted Minimalist Blazer",
+      "slug": "sculpted-minimalist-blazer",
+      "description": "A single-breasted blazer with structured shoulders, concealed button placket, and bespoke interior cupro lining. Precision cut for an elongated, commanding look.",
+      "price": 395,
+      "images": [
+        "https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?w=1200&q=85",
+        "https://images.unsplash.com/photo-1548883354-7622d03aca27?w=1200&q=85"
+      ],
+      "category": "Jackets",
+      "gender": "women",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Onyx",
+        "Taupe"
+      ],
+      "stock": 12,
+      "sku": "VEL-W-BLZ-05",
+      "brand": "VELOUR Atelier",
+      "featured": false,
+      "newArrival": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-w-06",
+      "name": "Ribbed Silk-Cashmere Column Dress",
+      "slug": "ribbed-silk-cashmere-column-dress",
+      "description": "Effortless luxury in a lightweight ribbed knit combining Mulberry silk and Mongolian cashmere. Mid-calf hem with discreet side slit and clean crew neckline.",
+      "price": 290,
+      "salePrice": 250,
+      "images": [
+        "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1200&q=85",
+        "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=1200&q=85"
+      ],
+      "category": "Dresses",
+      "gender": "women",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Oatmeal",
+        "Espresso",
+        "Black"
+      ],
+      "stock": 15,
+      "sku": "VEL-W-DRS-06",
+      "brand": "VELOUR Studio",
+      "featured": true,
+      "newArrival": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-w-07",
+      "name": "Structured Smooth Leather Tote",
+      "slug": "structured-smooth-leather-tote",
+      "description": "Handcrafted in Florence from full-grain calfskin leather. Fits a 15-inch laptop with ease, featuring reinforced top handles and a subtle debossed VELOUR emblem.",
+      "price": 460,
+      "images": [
+        "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=1200&q=85",
+        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=1200&q=85"
+      ],
+      "category": "Accessories",
+      "gender": "women",
+      "sizes": [
+        "One Size"
+      ],
+      "colors": [
+        "Cognac",
+        "Black",
+        "Olive"
+      ],
+      "stock": 9,
+      "sku": "VEL-W-ACC-07",
+      "brand": "VELOUR Leather Goods",
+      "featured": false,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-w-08",
+      "name": "Pure Silk Organza Blouse",
+      "slug": "pure-silk-organza-blouse",
+      "description": "Semi-sheer gossamer silk with structured high collar, concealed mother-of-pearl buttons, and French seams throughout for pure artisanal refinement.",
+      "price": 210,
+      "images": [
+        "https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=1200&q=85",
+        "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1200&q=85"
+      ],
+      "category": "Tops",
+      "gender": "women",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Cloud White",
+        "Dove Grey"
+      ],
+      "stock": 11,
+      "sku": "VEL-W-TOP-08",
+      "brand": "VELOUR Atelier",
+      "featured": false,
+      "newArrival": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-w-09",
+      "name": "Straight-Leg Raw Denim Jeans",
+      "slug": "straight-leg-raw-denim-jeans",
+      "description": "Japanese selvedge 13.5oz organic cotton denim. Classic high-rise waist with relaxed straight legs and polished brushed-silver rivets.",
+      "price": 195,
+      "salePrice": 165,
+      "images": [
+        "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=1200&q=85"
+      ],
+      "category": "Jeans",
+      "gender": "women",
+      "sizes": [
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30"
+      ],
+      "colors": [
+        "Vintage Indigo",
+        "Washed Black"
+      ],
+      "stock": 20,
+      "sku": "VEL-W-JNS-09",
+      "brand": "VELOUR Denim",
+      "featured": false,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-w-10",
+      "name": "Wool & Cashmere Wrap Coat",
+      "slug": "wool-cashmere-wrap-coat",
+      "description": "An unstructured cocoon wrap coat with exaggerated notch lapels, deep patch pockets, and self-tie sash. Unlined for an easy, fluid drape.",
+      "price": 520,
+      "images": [
+        "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=1200&q=85"
+      ],
+      "category": "Jackets",
+      "gender": "women",
+      "sizes": [
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Camel",
+        "Cream"
+      ],
+      "stock": 7,
+      "sku": "VEL-W-COT-10",
+      "brand": "VELOUR Atelier",
+      "featured": true,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-w-11",
+      "name": "Heavy Cotton Mock-Neck T-Shirt",
+      "slug": "heavy-cotton-mock-neck-t-shirt",
+      "description": "280gsm organic heavyweight combed cotton. Crisp architectural collar and relaxed drop-shoulder cut that maintains its form wash after wash.",
+      "price": 85,
+      "images": [
+        "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=1200&q=85"
+      ],
+      "category": "Tops",
+      "gender": "women",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Optic White",
+        "Coal Black",
+        "Muted Sage"
+      ],
+      "stock": 35,
+      "sku": "VEL-W-TEE-11",
+      "brand": "VELOUR Studio",
+      "featured": false,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-w-12",
+      "name": "Pleated A-Line Midi Skirt",
+      "slug": "pleated-a-line-midi-skirt",
+      "description": "Accordion permanent-pleat midi skirt cut from lustrous fluid twill. Fitted grosgrain waistband with side zip closure.",
+      "price": 185,
+      "images": [
+        "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=1200&q=85"
+      ],
+      "category": "Trousers",
+      "gender": "women",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "colors": [
+        "Champagne",
+        "Midnight Blue"
+      ],
+      "stock": 14,
+      "sku": "VEL-W-SKT-12",
+      "brand": "VELOUR Studio",
+      "featured": false,
+      "newArrival": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-01",
+      "name": "Deconstructed Italian Wool Blazer",
+      "slug": "deconstructed-italian-wool-blazer",
+      "description": "Unstructured tailoring crafted from lightweight Super 130s wool from Biella, Italy. Soft, natural shoulders, patch pockets, and unlined interior for effortless elegance.",
+      "price": 440,
+      "salePrice": 385,
+      "images": [
+        "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=1200&q=85",
+        "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=1200&q=85"
+      ],
+      "category": "Jackets",
+      "gender": "men",
+      "sizes": [
+        "38R",
+        "40R",
+        "42R",
+        "44R"
+      ],
+      "colors": [
+        "Charcoal Heather",
+        "Deep Navy",
+        "Warm Khaki"
+      ],
+      "stock": 11,
+      "sku": "VEL-M-BLZ-01",
+      "brand": "VELOUR Sartorial",
+      "featured": true,
+      "newArrival": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-02",
+      "name": "Poplin French Cuff Dress Shirt",
+      "slug": "poplin-french-cuff-dress-shirt",
+      "description": "Woven from 120/2 two-ply Egyptian Giza cotton with an exceptionally smooth, crisp handfeel. Semi-spread collar with removable brass stays and Mother of Pearl buttons.",
+      "price": 150,
+      "images": [
+        "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=1200&q=85",
+        "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=1200&q=85"
+      ],
+      "category": "Shirts",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Crisp White",
+        "Sky Blue",
+        "Stripe"
+      ],
+      "stock": 25,
+      "sku": "VEL-M-SHT-02",
+      "brand": "VELOUR Sartorial",
+      "featured": true,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-03",
+      "name": "Chunky Ribbed Cashmere Sweater",
+      "slug": "chunky-ribbed-cashmere-sweater",
+      "description": "A substantial 7-gauge knit made from 100% Grade-A Mongolian cashmere. Features fisherman rib stitch, saddle shoulders, and thick crew neckline.",
+      "price": 360,
+      "salePrice": 310,
+      "images": [
+        "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=1200&q=85",
+        "https://images.unsplash.com/photo-1578587018452-892bacefd3f2?w=1200&q=85"
+      ],
+      "category": "Hoodies",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Sandstone",
+        "Dark Olive",
+        "Charcoal"
+      ],
+      "stock": 14,
+      "sku": "VEL-M-SWT-03",
+      "brand": "VELOUR Studio",
+      "featured": true,
+      "newArrival": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-04",
+      "name": "Relaxed Tapered Pleated Trousers",
+      "slug": "relaxed-tapered-pleated-trousers",
+      "description": "Contemporary tailoring with single forward pleats, comfortable room through the seat and thighs, and an elegant gentle taper down to the ankle.",
+      "price": 210,
+      "images": [
+        "https://images.unsplash.com/photo-1479064555552-3ef4979f8908?w=1200&q=85",
+        "https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=1200&q=85"
+      ],
+      "category": "Jeans",
+      "gender": "men",
+      "sizes": [
+        "30",
+        "32",
+        "34",
+        "36"
+      ],
+      "colors": [
+        "Slate Grey",
+        "Black",
+        "Camel"
+      ],
+      "stock": 17,
+      "sku": "VEL-M-TRS-04",
+      "brand": "VELOUR Sartorial",
+      "featured": false,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-05",
+      "name": "Minimalist Lambskin Leather Jacket",
+      "slug": "minimalist-lambskin-leather-jacket",
+      "description": "Supple full-grain Italian lambskin leather with satin interior lining. Clean café-racer collar, two-way RiRi antique silver zipper, and hidden interior chest pocket.",
+      "price": 690,
+      "images": [
+        "https://images.unsplash.com/photo-1520975916090-3105956dac38?w=1200&q=85",
+        "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=1200&q=85"
+      ],
+      "category": "Jackets",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Matte Black",
+        "Dark Espresso"
+      ],
+      "stock": 6,
+      "sku": "VEL-M-JKT-05",
+      "brand": "VELOUR Leather Goods",
+      "featured": true,
+      "newArrival": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-06",
+      "name": "Heavyweight Loopback Cotton Hoodie",
+      "slug": "heavyweight-loopback-cotton-hoodie",
+      "description": "Custom 450gsm French Terry knit in Portugal. Double-layered hood without drawstrings for a pure, clean architectural profile and reinforced rib side gussets.",
+      "price": 145,
+      "salePrice": 125,
+      "images": [
+        "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=1200&q=85",
+        "https://images.unsplash.com/photo-1578768079052-aa76e520028b?w=1200&q=85"
+      ],
+      "category": "Hoodies",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Heather Grey",
+        "Washed Black",
+        "Bone"
+      ],
+      "stock": 28,
+      "sku": "VEL-M-HOD-06",
+      "brand": "VELOUR Studio",
+      "featured": false,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-07",
+      "name": "Washed Linen Camp-Collar Shirt",
+      "slug": "washed-linen-camp-collar-shirt",
+      "description": "100% Normandy flax linen washed for an exceptionally soft hand. Retro relaxed camp collar, straight hem with side vents, and natural horn buttons.",
+      "price": 130,
+      "images": [
+        "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=1200&q=85",
+        "https://images.unsplash.com/photo-1603252109303-2751441dd157?w=1200&q=85"
+      ],
+      "category": "Shirts",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Terracotta",
+        "Sage",
+        "Natural Flax"
+      ],
+      "stock": 21,
+      "sku": "VEL-M-SHT-07",
+      "brand": "VELOUR Studio",
+      "featured": false,
+      "newArrival": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-08",
+      "name": "Classic Selvedge 14oz Denim",
+      "slug": "classic-selvedge-14oz-denim",
+      "description": "Milled on vintage shuttle looms in Okayama, Japan. 14oz indigo-dyed rope cotton that breaks in uniquely with wear. Mid-rise with clean tapered leg.",
+      "price": 210,
+      "images": [
+        "https://images.unsplash.com/photo-1542272604-780c96856592?w=1200&q=85"
+      ],
+      "category": "Jeans",
+      "gender": "men",
+      "sizes": [
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "36"
+      ],
+      "colors": [
+        "Raw Indigo",
+        "Stonewash"
+      ],
+      "stock": 19,
+      "sku": "VEL-M-JNS-08",
+      "brand": "VELOUR Denim",
+      "featured": false,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-09",
+      "name": "Hand-Welted Calfskin Chelsea Boots",
+      "slug": "hand-welted-calfskin-chelsea-boots",
+      "description": "Traditional Goodyear-welted construction with French Box Calf leather. Elegant almond toe, tonal elastic side panels, and stacked leather sole with rubber heel insert.",
+      "price": 420,
+      "images": [
+        "https://images.unsplash.com/photo-1638247025967-b4e38f787b76?w=1200&q=85"
+      ],
+      "category": "Accessories",
+      "gender": "men",
+      "sizes": [
+        "40",
+        "41",
+        "42",
+        "43",
+        "44",
+        "45"
+      ],
+      "colors": [
+        "Black Polish",
+        "Dark Cigar Suede"
+      ],
+      "stock": 10,
+      "sku": "VEL-M-SHO-09",
+      "brand": "VELOUR Sartorial",
+      "featured": true,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-10",
+      "name": "Structured Wool Overcoat",
+      "slug": "structured-wool-overcoat",
+      "description": "Tailored knee-length overcoat in double-faced virgin wool. Fly front concealing button closures, center back vent, and deep fleece-lined welt handwarmer pockets.",
+      "price": 560,
+      "salePrice": 480,
+      "images": [
+        "https://images.unsplash.com/photo-1534030347209-467a5b0ad3e6?w=1200&q=85"
+      ],
+      "category": "Jackets",
+      "gender": "men",
+      "sizes": [
+        "38R",
+        "40R",
+        "42R",
+        "44R"
+      ],
+      "colors": [
+        "Camel",
+        "Midnight Navy",
+        "Black"
+      ],
+      "stock": 9,
+      "sku": "VEL-M-COT-10",
+      "brand": "VELOUR Sartorial",
+      "featured": true,
+      "newArrival": true,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-11",
+      "name": "Mercerized Cotton Crewneck T-Shirt",
+      "slug": "mercerized-cotton-crewneck-t-shirt",
+      "description": "Double-mercerized long-staple Pima cotton for a subtle silk-like sheen, saturated color fastness, and frictionless comfort against the skin.",
+      "price": 75,
+      "images": [
+        "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=1200&q=85"
+      ],
+      "category": "Shirts",
+      "gender": "men",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "colors": [
+        "Optical White",
+        "Deep Black",
+        "Navy"
+      ],
+      "stock": 40,
+      "sku": "VEL-M-TEE-11",
+      "brand": "VELOUR Studio",
+      "featured": false,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    },
+    {
+      "id": "prod-m-12",
+      "name": "Wool & Silk Evening Tuxedo",
+      "slug": "wool-silk-evening-tuxedo",
+      "description": "Precision black-tie evening suit featuring black satin silk shawl lapels, jetted pockets, and matching side-stripe trousers with natural drape.",
+      "price": 780,
+      "images": [
+        "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?w=1200&q=85"
+      ],
+      "category": "Jackets",
+      "gender": "men",
+      "sizes": [
+        "38R",
+        "40R",
+        "42R",
+        "44R"
+      ],
+      "colors": [
+        "Onyx Black"
+      ],
+      "stock": 5,
+      "sku": "VEL-M-TUX-12",
+      "brand": "VELOUR Sartorial",
+      "featured": false,
+      "newArrival": false,
+      "isActive": true,
+      "createdAt": "2026-09-15T07:18:30.288Z",
+      "updatedAt": "2026-09-15T07:18:30.288Z"
+    }
+  ],
+  "carts": [
+    {
+      "userId": "guest_test_session_123",
+      "items": [],
+      "updatedAt": "2026-09-15T08:07:31.260Z"
+    }
+  ],
+  "wishlists": [],
+  "orders": [
+    {
+      "id": "ord-1789459651260-r8s2",
+      "orderNumber": "VEL-608837",
+      "userId": "guest_test_session_123",
+      "userName": "Sophia Loren",
+      "userEmail": "sophia@example.com",
+      "items": [
+        {
+          "productId": "prod-w-01",
+          "name": "Sateen Bias-Cut Evening Gown",
+          "price": 290,
+          "image": "https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=1200&q=85",
+          "size": "S",
+          "color": "Champagne Ivory",
+          "quantity": 1
+        }
+      ],
+      "shippingAddress": {
+        "fullName": "Sophia Loren",
+        "phone": "+1 555 123 4567",
+        "email": "sophia@example.com",
+        "address": "742 Evergreen Terrace",
+        "city": "Beverly Hills",
+        "postalCode": "90210",
+        "country": "United States"
+      },
+      "paymentMethod": "Cash on Delivery",
+      "paymentStatus": "Pending",
+      "orderStatus": "Confirmed",
+      "subtotal": 290,
+      "shipping": 0,
+      "discount": 0,
+      "total": 290,
+      "createdAt": "2026-09-15T08:07:31.260Z",
+      "updatedAt": "2026-09-15T08:07:31.260Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-1",
+      "name": "Dresses",
+      "slug": "dresses",
+      "gender": "women",
+      "image": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80"
+    },
+    {
+      "id": "cat-2",
+      "name": "Coats & Jackets",
+      "slug": "jackets",
+      "gender": "women",
+      "image": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=800&q=80"
+    },
+    {
+      "id": "cat-3",
+      "name": "Tops & Knitwear",
+      "slug": "tops",
+      "gender": "women",
+      "image": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80"
+    },
+    {
+      "id": "cat-4",
+      "name": "Trousers & Skirts",
+      "slug": "trousers",
+      "gender": "women",
+      "image": "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80"
+    },
+    {
+      "id": "cat-5",
+      "name": "Suits & Tailoring",
+      "slug": "jackets",
+      "gender": "men",
+      "image": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&q=80"
+    },
+    {
+      "id": "cat-6",
+      "name": "Shirts",
+      "slug": "shirts",
+      "gender": "men",
+      "image": "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&q=80"
+    },
+    {
+      "id": "cat-7",
+      "name": "Knitwear & Sweaters",
+      "slug": "hoodies",
+      "gender": "men",
+      "image": "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=800&q=80"
+    },
+    {
+      "id": "cat-8",
+      "name": "Trousers & Denim",
+      "slug": "jeans",
+      "gender": "men",
+      "image": "https://images.unsplash.com/photo-1479064555552-3ef4979f8908?w=800&q=80"
+    },
+    {
+      "id": "cat-9",
+      "name": "Accessories",
+      "slug": "accessories",
+      "gender": "unisex",
+      "image": "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800&q=80"
+    }
+  ],
+  "newsletter": []
+}
