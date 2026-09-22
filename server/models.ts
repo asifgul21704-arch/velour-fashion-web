@@ -140,8 +140,14 @@ export interface IOrder extends Document {
     postalCode: string;
     country: string;
   };
-  paymentMethod: 'Cash on Delivery' | 'Credit Card' | 'Stripe' | 'Bank Transfer';
-  paymentStatus: 'Pending' | 'Processing' | 'Paid' | 'Failed' | 'Refunded';
+  paymentMethod: string;
+  paymentStatus: 'Pending' | 'Processing' | 'Paid' | 'Failed' | 'Cancelled' | 'Refunded';
+  paymentProvider?: string;
+  paymentSessionId?: string;
+  paymentIntentId?: string;
+  transactionId?: string;
+  paidAt?: string;
+  currency?: string;
   orderStatus:
     | 'Pending'
     | 'Confirmed'
@@ -167,6 +173,7 @@ export interface IOrder extends Document {
   refundAmount?: number;
   refundReason?: string;
   refundDate?: string;
+  refundId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -199,15 +206,21 @@ export const OrderSchema = new Schema<IOrder>(
     },
     paymentMethod: {
       type: String,
-      enum: ['Cash on Delivery', 'Credit Card', 'Stripe', 'Bank Transfer'],
-      default: 'Cash on Delivery',
+      default: 'Stripe',
+      index: true,
     },
     paymentStatus: {
       type: String,
-      enum: ['Pending', 'Processing', 'Paid', 'Failed', 'Refunded'],
+      enum: ['Pending', 'Processing', 'Paid', 'Failed', 'Cancelled', 'Refunded'],
       default: 'Pending',
       index: true,
     },
+    paymentProvider: { type: String, default: 'stripe', index: true },
+    paymentSessionId: { type: String, index: true },
+    paymentIntentId: { type: String, index: true },
+    transactionId: { type: String, index: true },
+    paidAt: { type: String },
+    currency: { type: String, default: 'USD' },
     orderStatus: {
       type: String,
       enum: [
@@ -241,6 +254,7 @@ export const OrderSchema = new Schema<IOrder>(
     refundAmount: { type: Number },
     refundReason: { type: String },
     refundDate: { type: String },
+    refundId: { type: String },
   },
   { timestamps: true }
 );
@@ -346,11 +360,15 @@ export interface IPaymentRecord extends Document {
   amount: number;
   currency: string;
   provider: string;
-  status: 'Pending' | 'Processing' | 'Paid' | 'Failed' | 'Refunded';
+  status: 'Pending' | 'Processing' | 'Paid' | 'Failed' | 'Cancelled' | 'Refunded';
   transactionRef: string;
+  paymentSessionId?: string;
+  paymentIntentId?: string;
+  paidAt?: string;
   refundAmount?: number;
   refundDate?: string;
   refundReason?: string;
+  refundId?: string;
 }
 
 export const PaymentRecordSchema = new Schema<IPaymentRecord>(
@@ -361,17 +379,40 @@ export const PaymentRecordSchema = new Schema<IPaymentRecord>(
     customerEmail: { type: String, required: true },
     amount: { type: Number, required: true },
     currency: { type: String, default: 'USD' },
-    provider: { type: String, default: 'Cash on Delivery' },
+    provider: { type: String, default: 'stripe', index: true },
     status: {
       type: String,
-      enum: ['Pending', 'Processing', 'Paid', 'Failed', 'Refunded'],
+      enum: ['Pending', 'Processing', 'Paid', 'Failed', 'Cancelled', 'Refunded'],
       default: 'Pending',
       index: true,
     },
-    transactionRef: { type: String, required: true },
+    transactionRef: { type: String, required: true, index: true },
+    paymentSessionId: { type: String, index: true },
+    paymentIntentId: { type: String, index: true },
+    paidAt: { type: String },
     refundAmount: { type: Number },
     refundDate: { type: String },
     refundReason: { type: String },
+    refundId: { type: String },
+  },
+  { timestamps: true }
+);
+
+// 8.5 PROCESSED WEBHOOK EVENT SCHEMA (Idempotency)
+export interface IProcessedWebhookEvent extends Document {
+  id: string;
+  eventId: string;
+  provider: string;
+  eventType: string;
+  processedAt: string;
+}
+
+export const ProcessedWebhookEventSchema = new Schema<IProcessedWebhookEvent>(
+  {
+    eventId: { type: String, required: true, unique: true, index: true },
+    provider: { type: String, required: true, index: true },
+    eventType: { type: String, required: true },
+    processedAt: { type: String, required: true },
   },
   { timestamps: true }
 );
@@ -545,3 +586,6 @@ export const AdminNotificationModel =
 export const StoreSettingsModel =
   mongoose.models.StoreSettings || mongoose.model<IStoreSettings>('StoreSettings', StoreSettingsSchema);
 export const AuditLogModel = mongoose.models.AuditLog || mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
+export const ProcessedWebhookEventModel =
+  mongoose.models.ProcessedWebhookEvent ||
+  mongoose.model<IProcessedWebhookEvent>('ProcessedWebhookEvent', ProcessedWebhookEventSchema);

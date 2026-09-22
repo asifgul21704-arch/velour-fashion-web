@@ -10,8 +10,10 @@ interface HomePageProps {
 }
 
 export function HomePage({ onNavigate }: HomePageProps) {
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [newArrivals, setNewArrivals] = useState<Product[]>([]);
+  const [womenProducts, setWomenProducts] = useState<Product[]>([]);
+  const [menProducts, setMenProducts] = useState<Product[]>([]);
+  const [activeWomenCategory, setActiveWomenCategory] = useState<string>('all');
+  const [activeMenCategory, setActiveMenCategory] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,18 +42,13 @@ export function HomePage({ onNavigate }: HomePageProps) {
   useEffect(() => {
     async function loadHomeProducts() {
       try {
-        const [featRes, newRes] = await Promise.all([
-          apiFetch('/api/products?featured=true'),
-          apiFetch('/api/products?newArrival=true')
-        ]);
+        const allRes = await apiFetch('/api/products');
 
-        if (featRes.ok) {
-          const d = await featRes.json();
-          setFeaturedProducts(d.products.slice(0, 4));
-        }
-        if (newRes.ok) {
-          const d = await newRes.json();
-          setNewArrivals(d.products.slice(0, 4));
+        if (allRes.ok) {
+          const d = await allRes.json();
+          const allList: Product[] = d.products || [];
+          setWomenProducts(allList.filter(p => p.gender === 'women' || p.gender === 'unisex'));
+          setMenProducts(allList.filter(p => p.gender === 'men' || p.gender === 'unisex'));
         }
       } catch (err) {
         console.error('Error fetching home products', err);
@@ -62,6 +59,18 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
     loadHomeProducts();
   }, []);
+
+  // Unique categories for filtering
+  const womenCategories = ['all', ...Array.from(new Set(womenProducts.map(p => p.category))).filter(Boolean)];
+  const menCategories = ['all', ...Array.from(new Set(menProducts.map(p => p.category))).filter(Boolean)];
+
+  const filteredWomenProducts = activeWomenCategory === 'all'
+    ? womenProducts
+    : womenProducts.filter(p => p.category.toLowerCase() === activeWomenCategory.toLowerCase());
+
+  const filteredMenProducts = activeMenCategory === 'all'
+    ? menProducts
+    : menProducts.filter(p => p.category.toLowerCase() === activeMenCategory.toLowerCase());
 
   const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -232,25 +241,58 @@ export function HomePage({ onNavigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* 3. FEATURED PRODUCTS */}
+      {/* 3. WOMEN'S COLLECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 pb-4 border-b border-neutral-200 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-4 border-b border-neutral-200 gap-4">
           <div>
             <span className="text-xs uppercase tracking-[0.28em] text-neutral-400 block mb-1 font-semibold">
-              The Signature Selection
+              Modern Feminine Tailoring & Knitwear
             </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-neutral-900 font-normal">
-              Featured Pieces
-            </h2>
+            <div className="flex items-baseline gap-3">
+              <h2 className="font-serif text-3xl sm:text-4xl text-neutral-900 font-normal">
+                Women's Collection
+              </h2>
+              <span className="text-xs text-neutral-500 font-mono">
+                ({filteredWomenProducts.length} {filteredWomenProducts.length === 1 ? 'piece' : 'pieces'})
+              </span>
+            </div>
           </div>
           <button
             onClick={() => onNavigate('/women')}
-            className="text-xs uppercase tracking-[0.2em] text-neutral-900 hover:text-neutral-600 font-medium flex items-center gap-1.5 transition-colors"
+            className="text-xs uppercase tracking-[0.2em] text-neutral-900 hover:text-neutral-600 font-medium flex items-center gap-1.5 transition-colors group"
           >
-            <span>View All Garments</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>Explore All Women's</span>
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
           </button>
         </div>
+
+        {/* Women Category Filters */}
+        {womenCategories.length > 1 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 no-scrollbar text-xs">
+            {womenCategories.map(cat => {
+              const count = cat === 'all'
+                ? womenProducts.length
+                : womenProducts.filter(p => p.category.toLowerCase() === cat.toLowerCase()).length;
+              const isActive = activeWomenCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveWomenCategory(cat)}
+                  className={`px-3.5 py-1.5 whitespace-nowrap rounded-none transition-colors border ${
+                    isActive
+                      ? 'bg-neutral-900 text-white border-neutral-900 font-medium'
+                      : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
+                  }`}
+                >
+                  <span className="capitalize">{cat === 'all' ? 'All Women' : cat}</span>
+                  <span className={`ml-1.5 text-[10px] ${isActive ? 'text-neutral-300' : 'text-neutral-400'}`}>
+                    ({count})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 animate-pulse">
@@ -258,9 +300,19 @@ export function HomePage({ onNavigate }: HomePageProps) {
               <div key={i} className="aspect-[3/4] bg-neutral-200" />
             ))}
           </div>
+        ) : filteredWomenProducts.length === 0 ? (
+          <div className="text-center py-16 bg-neutral-50 border border-neutral-200">
+            <p className="text-sm text-neutral-500 mb-3 font-light">No products found in this category.</p>
+            <button
+              onClick={() => setActiveWomenCategory('all')}
+              className="text-xs uppercase tracking-[0.2em] font-semibold text-neutral-900 underline underline-offset-4"
+            >
+              Reset Filter
+            </button>
+          </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
-            {featuredProducts.map(product => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
+            {filteredWomenProducts.map(product => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -304,25 +356,58 @@ export function HomePage({ onNavigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* 5. NEW ARRIVALS */}
+      {/* 5. MEN'S COLLECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 pb-4 border-b border-neutral-200 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-4 border-b border-neutral-200 gap-4">
           <div>
             <span className="text-xs uppercase tracking-[0.28em] text-neutral-400 block mb-1 font-semibold">
-              Fresh Off The Looms
+              Deconstructed Outerwear & Relaxed Silhouettes
             </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-neutral-900 font-normal">
-              New Arrivals
-            </h2>
+            <div className="flex items-baseline gap-3">
+              <h2 className="font-serif text-3xl sm:text-4xl text-neutral-900 font-normal">
+                Men's Collection
+              </h2>
+              <span className="text-xs text-neutral-500 font-mono">
+                ({filteredMenProducts.length} {filteredMenProducts.length === 1 ? 'piece' : 'pieces'})
+              </span>
+            </div>
           </div>
           <button
             onClick={() => onNavigate('/men')}
-            className="text-xs uppercase tracking-[0.2em] text-neutral-900 hover:text-neutral-600 font-medium flex items-center gap-1.5 transition-colors"
+            className="text-xs uppercase tracking-[0.2em] text-neutral-900 hover:text-neutral-600 font-medium flex items-center gap-1.5 transition-colors group"
           >
-            <span>Explore Collection</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>Explore All Men's</span>
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
           </button>
         </div>
+
+        {/* Men Category Filters */}
+        {menCategories.length > 1 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 no-scrollbar text-xs">
+            {menCategories.map(cat => {
+              const count = cat === 'all'
+                ? menProducts.length
+                : menProducts.filter(p => p.category.toLowerCase() === cat.toLowerCase()).length;
+              const isActive = activeMenCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveMenCategory(cat)}
+                  className={`px-3.5 py-1.5 whitespace-nowrap rounded-none transition-colors border ${
+                    isActive
+                      ? 'bg-neutral-900 text-white border-neutral-900 font-medium'
+                      : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
+                  }`}
+                >
+                  <span className="capitalize">{cat === 'all' ? 'All Men' : cat}</span>
+                  <span className={`ml-1.5 text-[10px] ${isActive ? 'text-neutral-300' : 'text-neutral-400'}`}>
+                    ({count})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 animate-pulse">
@@ -330,9 +415,19 @@ export function HomePage({ onNavigate }: HomePageProps) {
               <div key={i} className="aspect-[3/4] bg-neutral-200" />
             ))}
           </div>
+        ) : filteredMenProducts.length === 0 ? (
+          <div className="text-center py-16 bg-neutral-50 border border-neutral-200">
+            <p className="text-sm text-neutral-500 mb-3 font-light">No products found in this category.</p>
+            <button
+              onClick={() => setActiveMenCategory('all')}
+              className="text-xs uppercase tracking-[0.2em] font-semibold text-neutral-900 underline underline-offset-4"
+            >
+              Reset Filter
+            </button>
+          </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
-            {newArrivals.map(product => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
+            {filteredMenProducts.map(product => (
               <ProductCard
                 key={product.id}
                 product={product}

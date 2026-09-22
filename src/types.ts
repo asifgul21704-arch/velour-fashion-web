@@ -119,7 +119,15 @@ export interface Order {
   userName: string;
   items: OrderItem[];
   shippingAddress: ShippingAddress;
-  paymentMethod: 'Cash on Delivery' | 'Credit Card' | 'Stripe' | 'Bank Transfer';
+  paymentMethod:
+    | 'Cash on Delivery'
+    | 'SadaPay'
+    | 'JazzCash'
+    | 'EasyPaisa'
+    | 'NayaPay'
+    | 'Credit Card'
+    | 'Stripe'
+    | 'Bank Transfer';
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
   status?: OrderStatus;

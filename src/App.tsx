@@ -88,10 +88,12 @@ function MainRouter() {
       return <CheckoutPage onNavigate={navigate} />;
     }
 
-    // 8. Order Success: /order-success/:id
-    if (pathname.startsWith('/order-success/')) {
-      const orderId = pathname.replace('/order-success/', '');
-      return <OrderSuccessPage orderId={orderId} onNavigate={navigate} />;
+    // 8. Order Success: /order-success/:id or /order-success?order_id=...&session_id=...
+    if (pathname.startsWith('/order-success')) {
+      const pathPart = pathname.replace('/order-success/', '').replace('/order-success', '');
+      const orderId = pathPart || searchParams.get('order_id') || '';
+      const sessionId = searchParams.get('session_id') || undefined;
+      return <OrderSuccessPage orderId={orderId} sessionId={sessionId} onNavigate={navigate} />;
     }
 
     // 9. Wishlist

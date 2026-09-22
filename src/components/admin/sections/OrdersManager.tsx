@@ -477,6 +477,21 @@ export function OrdersManager({
                       </div>
                     )}
                   </div>
+
+                  {/* Payment Method Badge & Notes */}
+                  <div className="mt-3 pt-3 border-t border-neutral-200/60">
+                    <div className="flex items-center justify-between">
+                      <span className="text-neutral-500 font-medium">Gateway:</span>
+                      <span className="font-semibold text-neutral-900 px-2 py-0.5 bg-white border border-neutral-200 rounded">
+                        {selectedOrder.paymentMethod || 'Cash on Delivery'}
+                      </span>
+                    </div>
+                    {selectedOrder.notes && (
+                      <div className="mt-2 p-2 bg-white rounded border border-neutral-200/70 text-[11px] font-mono text-neutral-700">
+                        {selectedOrder.notes}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

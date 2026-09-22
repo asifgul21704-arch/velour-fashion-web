@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { db, DbUser, DbOrder } from './server/db.js';
+import { getPaymentProvider } from './server/services/payment/index.js';
 
 dotenv.config();
 
@@ -13,10 +14,12 @@ const app = express();
 const PORT = 3000;
 const AUTH_SECRET = process.env.AUTH_SECRET || 'velour-super-secret-jwt-key-change-in-production';
 const COOKIE_NAME = 'velour_token';
+const paymentProvider = getPaymentProvider();
 
-// Extend Express Request to carry authenticated user
+// Extend Express Request to carry authenticated user and raw body
 export interface AuthRequest extends Request {
   user?: DbUser;
+  rawBody?: Buffer;
 }
 
 // Configurable CORS handling for local dev, Vercel deployments, and custom frontends
@@ -57,8 +60,15 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'X-Requested-With']
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(
+  express.json({
+    limit: '25mb',
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf;
+    }
+  })
+);
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(cookieParser());
 
 app.get('/api/health', (_req, res) => {
@@ -554,6 +564,413 @@ app.post('/api/orders', (req: AuthRequest, res: Response) => {
   }
 });
 
+// ==========================================
+// 5. REAL PAYMENT GATEWAY ENDPOINTS (Stripe)
+// ==========================================
+
+// Get payment gateway public configuration
+app.get('/api/payments/config', (_req: Request, res: Response) => {
+  res.json({
+    provider: 'stripe',
+    isConfigured: paymentProvider.isConfigured(),
+    currency: (process.env.CURRENCY || 'USD').toUpperCase(),
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || null
+  });
+});
+
+// Create Payment Session / Order
+app.post('/api/payments/create', async (req: AuthRequest, res: Response) => {
+  const { shippingAddress, paymentMethod = 'Stripe', discountCode, guestItems, notes } = req.body;
+
+  if (!shippingAddress) {
+    return res.status(400).json({ error: 'Shipping address is required.' });
+  }
+
+  const requiredFields = ['fullName', 'phone', 'email', 'address', 'city', 'postalCode', 'country'];
+  for (const field of requiredFields) {
+    if (!shippingAddress[field]?.trim()) {
+      return res.status(400).json({ error: `Shipping field "${field}" is required.` });
+    }
+  }
+
+  try {
+    const ownerId = getClientIdentifier(req);
+
+    if (Array.isArray(guestItems) && guestItems.length > 0) {
+      db.mergeCart(ownerId, guestItems);
+    }
+
+    const isCardPayment = ['Stripe', 'Credit Card', 'Card'].includes(paymentMethod);
+
+    // If online card payment is selected, check if Stripe secret key is present
+    if (isCardPayment && !paymentProvider.isConfigured()) {
+      return res.status(400).json({
+        error:
+          'Payment Gateway Configuration Required: STRIPE_SECRET_KEY is not configured in the environment. Please add STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY to your environment variables to enable real card payments.',
+        code: 'PAYMENT_GATEWAY_NOT_CONFIGURED',
+        provider: 'stripe'
+      });
+    }
+
+    if (isCardPayment) {
+      // Create pending order without deducting stock and without clearing cart
+      const pendingOrder = db.createPendingOrder({
+        userId: req.user ? req.user.id : ownerId,
+        userName: req.user ? req.user.name : shippingAddress.fullName.trim(),
+        userEmail: req.user ? req.user.email : shippingAddress.email.trim(),
+        shippingAddress: {
+          fullName: shippingAddress.fullName.trim(),
+          phone: shippingAddress.phone.trim(),
+          email: shippingAddress.email.trim(),
+          address: shippingAddress.address.trim(),
+          city: shippingAddress.city.trim(),
+          postalCode: shippingAddress.postalCode.trim(),
+          country: shippingAddress.country.trim()
+        },
+        paymentMethod: 'Stripe',
+        paymentProvider: 'stripe',
+        currency: process.env.CURRENCY || 'USD',
+        discountCode,
+        notes
+      });
+
+      // Construct dynamic host URLs for redirection
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+      const defaultBase = `${protocol}://${host}`;
+      const appUrl = (process.env.APP_URL || process.env.FRONTEND_URL || defaultBase).replace(/\/$/, '');
+
+      const successUrl = `${appUrl}/order-success?order_id=${pendingOrder.id}&session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = `${appUrl}/checkout?cancelled=true&order_id=${pendingOrder.id}`;
+
+      // Call real Stripe Checkout API
+      const result = await paymentProvider.createPayment({
+        orderId: pendingOrder.id,
+        orderNumber: pendingOrder.orderNumber,
+        userId: pendingOrder.userId,
+        userName: pendingOrder.userName,
+        userEmail: pendingOrder.userEmail,
+        items: pendingOrder.items,
+        subtotal: pendingOrder.subtotal,
+        shipping: pendingOrder.shipping,
+        discount: pendingOrder.discount,
+        tax: pendingOrder.tax,
+        total: pendingOrder.total,
+        currency: pendingOrder.currency || 'USD',
+        successUrl,
+        cancelUrl
+      });
+
+      // Attach session ID to pending order
+      db.updateOrderPaymentSession(pendingOrder.id, result.sessionId, result.paymentIntentId);
+
+      return res.status(201).json({
+        success: true,
+        orderId: pendingOrder.id,
+        orderNumber: pendingOrder.orderNumber,
+        sessionId: result.sessionId,
+        checkoutUrl: result.checkoutUrl,
+        total: pendingOrder.total,
+        currency: pendingOrder.currency,
+        paymentMethod: 'Stripe',
+        paymentStatus: 'Pending'
+      });
+    }
+
+    // Otherwise, Cash on Delivery
+    const codOrder = db.createOrder({
+      userId: req.user ? req.user.id : ownerId,
+      userName: req.user ? req.user.name : shippingAddress.fullName.trim(),
+      userEmail: req.user ? req.user.email : shippingAddress.email.trim(),
+      shippingAddress: {
+        fullName: shippingAddress.fullName.trim(),
+        phone: shippingAddress.phone.trim(),
+        email: shippingAddress.email.trim(),
+        address: shippingAddress.address.trim(),
+        city: shippingAddress.city.trim(),
+        postalCode: shippingAddress.postalCode.trim(),
+        country: shippingAddress.country.trim()
+      },
+      paymentMethod: 'Cash on Delivery',
+      discountCode,
+      notes
+    });
+
+    return res.status(201).json({
+      success: true,
+      order: codOrder,
+      orderId: codOrder.id,
+      orderNumber: codOrder.orderNumber,
+      checkoutUrl: null,
+      total: codOrder.total,
+      currency: codOrder.currency || 'USD',
+      paymentMethod: 'Cash on Delivery',
+      paymentStatus: 'Pending'
+    });
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message || 'Could not initiate payment.' });
+  }
+});
+
+// Verify payment status directly with gateway (e.g. when customer returns to success page)
+app.post('/api/payments/verify', async (req: AuthRequest, res: Response) => {
+  const { sessionId, orderId } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({ error: 'Payment sessionId is required for verification.' });
+  }
+
+  try {
+    const result = await paymentProvider.verifyPayment(sessionId);
+
+    if (result.isPaid) {
+      // Find order by ID or sessionId
+      const targetId = orderId || result.metadata?.orderId || sessionId;
+      const verifiedOrder = db.confirmOrderPayment(targetId, {
+        transactionId: result.transactionId,
+        paymentIntentId: result.paymentIntentId,
+        paymentSessionId: sessionId,
+        paidAt: result.paidAt,
+        amountPaid: result.amountPaid
+      });
+
+      if (!verifiedOrder) {
+        return res.status(404).json({ error: 'Order associated with payment could not be found.' });
+      }
+
+      return res.json({
+        success: true,
+        isPaid: true,
+        status: 'Paid',
+        order: verifiedOrder
+      });
+    }
+
+    if (result.status === 'Cancelled' && orderId) {
+      db.markOrderPaymentCancelled(orderId);
+    } else if (result.status === 'Failed' && orderId) {
+      db.markOrderPaymentFailed(orderId, 'Payment failed or was declined.');
+    }
+
+    const currentOrder = orderId ? db.getOrderById(orderId) : null;
+    return res.json({
+      success: true,
+      isPaid: false,
+      status: result.status,
+      order: currentOrder
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Error verifying payment with gateway.' });
+  }
+});
+
+// Get real-time payment status
+app.get('/api/payments/status/:orderId', async (req: AuthRequest, res: Response) => {
+  const order = db.getOrderById(req.params.orderId);
+  if (!order) {
+    return res.status(404).json({ error: 'Order not found.' });
+  }
+
+  // If order is Pending and has a paymentSessionId, check directly with Stripe
+  if (order.paymentStatus === 'Pending' && order.paymentSessionId && paymentProvider.isConfigured()) {
+    try {
+      const verifyResult = await paymentProvider.verifyPayment(order.paymentSessionId);
+      if (verifyResult.isPaid) {
+        db.confirmOrderPayment(order.id, {
+          transactionId: verifyResult.transactionId,
+          paymentIntentId: verifyResult.paymentIntentId,
+          paymentSessionId: order.paymentSessionId,
+          paidAt: verifyResult.paidAt,
+          amountPaid: verifyResult.amountPaid
+        });
+      }
+    } catch {}
+  }
+
+  const updatedOrder = db.getOrderById(req.params.orderId)!;
+  res.json({
+    orderId: updatedOrder.id,
+    orderNumber: updatedOrder.orderNumber,
+    paymentStatus: updatedOrder.paymentStatus,
+    orderStatus: updatedOrder.orderStatus,
+    transactionId: updatedOrder.transactionId || null,
+    paidAt: updatedOrder.paidAt || null,
+    total: updatedOrder.total,
+    currency: updatedOrder.currency || 'USD',
+    isPaid: updatedOrder.paymentStatus === 'Paid'
+  });
+});
+
+// Retry payment for an unpaid or failed order
+app.post('/api/payments/retry', async (req: AuthRequest, res: Response) => {
+  const { orderId } = req.body;
+  if (!orderId) {
+    return res.status(400).json({ error: 'Order ID is required to retry payment.' });
+  }
+
+  const order = db.getOrderById(orderId);
+  if (!order) {
+    return res.status(404).json({ error: 'Order not found.' });
+  }
+
+  if (order.paymentStatus === 'Paid') {
+    return res.status(400).json({ error: 'This order has already been paid.' });
+  }
+
+  if (!paymentProvider.isConfigured()) {
+    return res.status(400).json({
+      error: 'STRIPE_SECRET_KEY is not configured in the environment. Cannot initiate retry session.'
+    });
+  }
+
+  try {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+    const defaultBase = `${protocol}://${host}`;
+    const appUrl = (process.env.APP_URL || process.env.FRONTEND_URL || defaultBase).replace(/\/$/, '');
+
+    const successUrl = `${appUrl}/order-success?order_id=${order.id}&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${appUrl}/checkout?cancelled=true&order_id=${order.id}`;
+
+    const result = await paymentProvider.createPayment({
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      userId: order.userId,
+      userName: order.userName,
+      userEmail: order.userEmail,
+      items: order.items,
+      subtotal: order.subtotal,
+      shipping: order.shipping,
+      discount: order.discount,
+      tax: order.tax,
+      total: order.total,
+      currency: order.currency || 'USD',
+      successUrl,
+      cancelUrl
+    });
+
+    db.updateOrderPaymentSession(order.id, result.sessionId, result.paymentIntentId);
+
+    res.json({
+      success: true,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      sessionId: result.sessionId,
+      checkoutUrl: result.checkoutUrl
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Could not generate retry payment session.' });
+  }
+});
+
+// Secure Webhook endpoint for asynchronous payment provider confirmation
+app.post('/api/payments/webhook', async (req: AuthRequest, res: Response) => {
+  const signature = req.headers['stripe-signature'] as string;
+  const rawBody = (req as any).rawBody || req.body;
+
+  if (!signature) {
+    return res.status(400).json({ error: 'Missing stripe-signature header.' });
+  }
+
+  try {
+    const eventResult = await paymentProvider.handleWebhook(rawBody, signature);
+
+    // Idempotency check: Reject duplicate events safely
+    if (db.isWebhookEventProcessed(eventResult.eventId)) {
+      return res.status(200).json({ received: true, duplicate: true });
+    }
+
+    // Record event as processed
+    db.recordWebhookEvent(eventResult.eventId, 'stripe', eventResult.eventType);
+
+    if (eventResult.status === 'Paid') {
+      const targetId = eventResult.orderId || eventResult.paymentIntentId;
+      if (targetId) {
+        db.confirmOrderPayment(targetId, {
+          transactionId: eventResult.transactionId,
+          paymentIntentId: eventResult.paymentIntentId,
+          amountPaid: eventResult.amount
+        });
+      }
+    } else if (eventResult.status === 'Failed') {
+      if (eventResult.orderId) {
+        db.markOrderPaymentFailed(eventResult.orderId, 'Payment failed via webhook notification');
+      }
+    } else if (eventResult.status === 'Refunded') {
+      if (eventResult.orderId) {
+        db.refundOrder(
+          eventResult.orderId,
+          eventResult.refundAmount || 0,
+          'Automated webhook refund',
+          'Stripe Webhook',
+          eventResult.refundId
+        );
+      }
+    }
+
+    return res.status(200).json({ received: true });
+  } catch (err: any) {
+    console.error('[Webhook Error]', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+});
+
+// Admin Refund endpoint with real Stripe Gateway integration
+app.post('/api/payments/refund', requireAdmin, async (req: AuthRequest, res: Response) => {
+  const { orderId, amount, reason } = req.body;
+  if (!orderId) {
+    return res.status(400).json({ error: 'Order ID is required.' });
+  }
+
+  const order = db.getOrderById(orderId);
+  if (!order) {
+    return res.status(404).json({ error: 'Order not found.' });
+  }
+
+  if (order.paymentStatus !== 'Paid') {
+    return res.status(400).json({ error: 'Only paid orders can be refunded.' });
+  }
+
+  const refundAmt = Number(amount || order.total);
+
+  try {
+    let refundId = `manual-ref-${Date.now()}`;
+
+    // If order was paid with Stripe and Stripe is configured, call Stripe Refund API
+    if (order.paymentProvider === 'stripe' && (order.paymentIntentId || order.transactionId)) {
+      if (paymentProvider.isConfigured()) {
+        const stripeRefund = await paymentProvider.refundPayment({
+          paymentIntentId: order.paymentIntentId,
+          transactionId: order.transactionId,
+          amount: refundAmt,
+          reason: reason || 'Customer return requested'
+        });
+        refundId = stripeRefund.refundId;
+      }
+    }
+
+    const updated = db.refundOrder(
+      order.id,
+      refundAmt,
+      reason || 'Administrative refund issued',
+      req.user!.name,
+      refundId
+    );
+
+    audit(
+      req,
+      'REFUND_ORDER',
+      'orders',
+      order.id,
+      `Refunded $${refundAmt} on order #${order.orderNumber} (Ref: ${refundId})`
+    );
+
+    res.json({ success: true, refundId, order: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Could not process refund with payment gateway.' });
+  }
+});
+
 const getUserOrders = (req: AuthRequest, res: Response) => {
   const ownerId = getClientIdentifier(req);
   const targetId = req.user ? req.user.id : ownerId;
@@ -840,6 +1257,31 @@ app.post('/api/admin/products/bulk', requireAdmin, (req: AuthRequest, res: Respo
   const affected = db.bulkUpdateProducts(ids, action);
   audit(req, `BULK_${action.toUpperCase()}_PRODUCTS`, 'products', undefined, `Bulk ${action} for ${affected} products`);
   res.json({ affected, success: true });
+});
+
+// Admin media / device file upload endpoint
+app.post('/api/admin/upload', requireAdmin, (req: AuthRequest, res: Response) => {
+  try {
+    const { image, filename } = req.body;
+    if (!image || typeof image !== 'string') {
+      return res.status(400).json({ error: 'Valid image data is required.' });
+    }
+
+    // Accept valid data URL (e.g., data:image/png;base64,...) or web URL
+    if (image.startsWith('data:image/')) {
+      // Valid data image URL is directly stored and rendered without external dependency issues
+      audit(req, 'UPLOAD_IMAGE', 'media', undefined, `Uploaded device image: ${filename || 'image'}`);
+      return res.json({ url: image, success: true });
+    }
+
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      return res.json({ url: image, success: true });
+    }
+
+    return res.status(400).json({ error: 'Invalid image format. Must be an image file or URL.' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Image processing failed.' });
+  }
 });
 
 // --- ADMIN CATEGORIES ---

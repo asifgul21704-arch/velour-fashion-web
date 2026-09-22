@@ -14,7 +14,10 @@ import {
   ChevronDown,
   Layers,
   Sparkles,
-  ArrowUpDown
+  ArrowUpDown,
+  Upload,
+  Image as ImageIcon,
+  Loader2
 } from 'lucide-react';
 import { Product, Gender } from '../../../types.ts';
 
@@ -81,6 +84,8 @@ export function ProductsManager({
   });
 
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Sync form data when editing product changes
   React.useEffect(() => {
@@ -208,6 +213,83 @@ export function ProductsManager({
     } finally {
       setFormSubmitting(false);
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploadingImage(true);
+    try {
+      const newUrls: string[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith('image/')) continue;
+
+        // Convert device image to base64 data URL
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Upload through backend endpoint or directly append
+        try {
+          const res = await fetch('/api/admin/upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              image: dataUrl,
+              filename: file.name
+            })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.url) {
+              newUrls.push(data.url);
+              continue;
+            }
+          }
+        } catch {
+          // If server upload request fails, dataUrl can still be safely stored directly
+        }
+
+        newUrls.push(dataUrl);
+      }
+
+      if (newUrls.length > 0) {
+        setFormData((prev) => {
+          const currentUrls = prev.images.trim();
+          const combined = currentUrls
+            ? `${currentUrls}\n${newUrls.join('\n')}`
+            : newUrls.join('\n');
+          return { ...prev, images: combined };
+        });
+      }
+    } catch (err) {
+      console.error('Failed to read or upload device image', err);
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setFormData((prev) => {
+      const urls = prev.images
+        .split('\n')
+        .map((u) => u.trim())
+        .filter(Boolean);
+      const filtered = urls.filter((_, idx) => idx !== indexToRemove);
+      return { ...prev, images: filtered.join('\n') };
+    });
   };
 
   const handleExecuteBulk = async (action: 'activate' | 'deactivate' | 'delete') => {
@@ -663,37 +745,130 @@ export function ProductsManager({
                   />
                 </div>
 
-                {/* Image URLs */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1">
-                    Image URLs (one URL per line) *
-                  </label>
-                  <textarea
-                    rows={3}
-                    required
-                    value={formData.images}
-                    onChange={(e) => setFormData({ ...formData, images: e.target.value })}
-                    className="w-full px-3 py-2 text-xs font-mono border border-neutral-200 rounded-xl focus:ring-1 focus:ring-neutral-900 focus:outline-none"
+                {/* Image URLs & Device Upload */}
+                <div className="sm:col-span-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+                      Product Images *
+                    </label>
+                    <span className="text-[11px] text-neutral-500">
+                      Upload from device or enter URLs
+                    </span>
+                  </div>
+
+                  {/* Hidden native file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
                   />
-                  {formData.images && (
-                    <div className="flex gap-2 mt-2 overflow-x-auto">
-                      {formData.images
-                        .split('\n')
-                        .map((url) => url.trim())
-                        .filter(Boolean)
-                        .slice(0, 4)
-                        .map((imgUrl, i) => (
-                          <img
-                            key={i}
-                            src={imgUrl}
-                            alt=""
-                            className="w-12 h-14 object-cover rounded border border-neutral-200"
-                            onError={(e) => {
-                              (e.target as any).src =
-                                'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100';
-                            }}
-                          />
-                        ))}
+
+                  {/* Device Upload Drag-Drop Box */}
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        const fakeEvent = {
+                          target: { files: e.dataTransfer.files }
+                        } as unknown as React.ChangeEvent<HTMLInputElement>;
+                        handleFileUpload(fakeEvent);
+                      }
+                    }}
+                    className="border-2 border-dashed border-neutral-300 hover:border-neutral-800 hover:bg-neutral-50/50 rounded-xl p-4 text-center cursor-pointer transition-colors group flex flex-col items-center justify-center gap-1.5"
+                  >
+                    {isUploadingImage ? (
+                      <div className="flex items-center gap-2 text-xs text-neutral-600 py-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-neutral-900" />
+                        <span>Processing and uploading image from device...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-600 group-hover:bg-neutral-900 group-hover:text-white transition-colors">
+                          <Upload className="w-4 h-4" />
+                        </div>
+                        <p className="text-xs font-medium text-neutral-800">
+                          Click to upload from your device <span className="text-neutral-400 font-normal">or drag & drop</span>
+                        </p>
+                        <p className="text-[11px] text-neutral-400">
+                          PNG, JPG, WEBP, or GIF up to 20MB
+                        </p>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Textarea for Direct URLs / Multi-line Editing */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-medium text-neutral-600">
+                        Image URLs (one URL or data URL per line):
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex items-center gap-1 text-[11px] text-neutral-900 font-medium hover:underline"
+                      >
+                        <Upload className="w-3 h-3" />
+                        Choose from device
+                      </button>
+                    </div>
+                    <textarea
+                      rows={3}
+                      required
+                      value={formData.images}
+                      onChange={(e) => setFormData({ ...formData, images: e.target.value })}
+                      placeholder="https://images.unsplash.com/... or upload from device above"
+                      className="w-full px-3 py-2 text-xs font-mono border border-neutral-200 rounded-xl focus:ring-1 focus:ring-neutral-900 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Image Gallery Previews with Remove action */}
+                  {formData.images.trim() && (
+                    <div className="space-y-1.5 pt-1">
+                      <p className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider">
+                        Image Preview ({formData.images.split('\n').filter((u) => u.trim()).length})
+                      </p>
+                      <div className="flex gap-2.5 overflow-x-auto pb-1">
+                        {formData.images
+                          .split('\n')
+                          .map((url) => url.trim())
+                          .filter(Boolean)
+                          .map((imgUrl, i) => (
+                            <div
+                              key={i}
+                              className="relative group shrink-0 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-100"
+                            >
+                              <img
+                                src={imgUrl}
+                                alt={`Product thumbnail ${i + 1}`}
+                                className="w-16 h-20 object-cover"
+                                onError={(e) => {
+                                  (e.target as any).src =
+                                    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100';
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(i)}
+                                title="Remove image"
+                                className="absolute top-1 right-1 p-1 bg-black/70 hover:bg-red-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                              <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1 rounded">
+                                #{i + 1}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
                     </div>
                   )}
                 </div>

@@ -128,8 +128,14 @@ export interface DbOrder {
     postalCode: string;
     country: string;
   };
-  paymentMethod: 'Cash on Delivery' | 'Credit Card' | 'Stripe' | 'Bank Transfer';
-  paymentStatus: 'Pending' | 'Processing' | 'Paid' | 'Failed' | 'Refunded';
+  paymentMethod: string;
+  paymentStatus: 'Pending' | 'Processing' | 'Paid' | 'Failed' | 'Cancelled' | 'Refunded';
+  paymentProvider?: string;
+  paymentSessionId?: string;
+  paymentIntentId?: string;
+  transactionId?: string;
+  paidAt?: string;
+  currency?: string;
   orderStatus:
     | 'Pending'
     | 'Confirmed'
@@ -150,6 +156,7 @@ export interface DbOrder {
   refundAmount?: number;
   refundReason?: string;
   refundDate?: string;
+  refundId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -217,12 +224,24 @@ export interface DbPaymentRecord {
   amount: number;
   currency: string;
   provider: string;
-  status: 'Pending' | 'Processing' | 'Paid' | 'Failed' | 'Refunded';
+  status: 'Pending' | 'Processing' | 'Paid' | 'Failed' | 'Cancelled' | 'Refunded';
   transactionRef: string;
+  paymentSessionId?: string;
+  paymentIntentId?: string;
+  paidAt?: string;
   createdAt: string;
   refundAmount?: number;
   refundDate?: string;
   refundReason?: string;
+  refundId?: string;
+}
+
+export interface DbProcessedWebhookEvent {
+  id: string;
+  eventId: string;
+  provider: string;
+  eventType: string;
+  processedAt: string;
 }
 
 export interface DbBanner {
@@ -316,6 +335,7 @@ export interface DatabaseSchema {
   notifications: DbAdminNotification[];
   storeSettings: DbStoreSettings;
   auditLogs: DbAuditLog[];
+  processedWebhookEvents: DbProcessedWebhookEvent[];
 }
 
 // Detect serverless environment (e.g. Vercel, AWS Lambda) where process.cwd() is read-only
@@ -866,7 +886,9 @@ class VelourDatabase {
     if (!Array.isArray(this.data.contactMessages)) { this.data.contactMessages = []; changed = true; }
     if (!Array.isArray(this.data.notifications)) { this.data.notifications = DEFAULT_NOTIFICATIONS; changed = true; }
     if (!this.data.storeSettings) { this.data.storeSettings = DEFAULT_STORE_SETTINGS; changed = true; }
+    if (!Array.isArray(this.data.storeSettings)) { /* storeSettings is single object */ }
     if (!Array.isArray(this.data.auditLogs)) { this.data.auditLogs = []; changed = true; }
+    if (!Array.isArray(this.data.processedWebhookEvents)) { this.data.processedWebhookEvents = []; changed = true; }
 
     // Ensure all products have lowStockThreshold, tags, sku
     this.data.products.forEach(p => {
@@ -1808,6 +1830,316 @@ class VelourDatabase {
     return newOrder;
   }
 
+  public createPendingOrder(data: {
+    userId: string;
+    userName: string;
+    userEmail: string;
+    shippingAddress: DbOrder['shippingAddress'];
+    paymentMethod: string;
+    paymentProvider?: string;
+    currency?: string;
+    items?: Array<{ productId: string; quantity: number; size?: string; color?: string }>;
+    discountCode?: string;
+    notes?: string;
+  }): DbOrder {
+    const settings = this.getStoreSettings();
+    let orderItems: DbOrderItem[] = [];
+    let subtotal = 0;
+
+    // Use items passed in or fallback to user's cart
+    const sourceItems = data.items && data.items.length > 0 ? data.items : this.getCart(data.userId);
+    if (!sourceItems || sourceItems.length === 0) {
+      throw new Error('Cannot create pending order: Cart is empty.');
+    }
+
+    for (const item of sourceItems) {
+      const prod = this.getProductById(item.productId);
+      if (!prod) {
+        throw new Error(`Product not found with ID ${item.productId}`);
+      }
+      if (!prod.isActive) {
+        throw new Error(`Product "${prod.name}" is no longer available.`);
+      }
+      if (prod.stock < item.quantity) {
+        throw new Error(`Insufficient stock for "${prod.name}". Available: ${prod.stock}, requested: ${item.quantity}`);
+      }
+
+      // STRICT SERVER-SIDE PRICE: product.salePrice ?? product.price
+      const unitPrice = prod.salePrice ?? prod.price;
+      subtotal += unitPrice * item.quantity;
+
+      orderItems.push({
+        productId: prod.id,
+        name: prod.name,
+        price: unitPrice,
+        image: prod.images?.[0] || '',
+        size: item.size || (prod.sizes?.[0] || 'M'),
+        color: item.color || (prod.colors?.[0] || 'Default'),
+        quantity: item.quantity
+      });
+    }
+
+    // Shipping calculation from store settings
+    const shipping = subtotal >= (settings.freeShippingThreshold || 200) ? 0 : (settings.shippingFee || 15);
+
+    // Coupon discount verification from DB
+    let discount = 0;
+    if (data.discountCode) {
+      const coupon = this.getCouponByCode(data.discountCode);
+      if (coupon && coupon.isActive) {
+        if (coupon.discountType === 'percentage') {
+          discount = Math.round((subtotal * coupon.discountValue) / 100);
+        } else {
+          discount = Math.min(subtotal, coupon.discountValue);
+        }
+      }
+    }
+
+    const tax = Math.round(subtotal * 0.08); // 8% sales tax
+    const total = Math.max(0, subtotal + shipping + tax - discount);
+    const orderNumber = `VEL-${Math.floor(100000 + Math.random() * 900000)}`;
+    const currency = (data.currency || settings.currency || 'USD').toUpperCase();
+    const provider = data.paymentProvider || 'stripe';
+
+    const newOrder: DbOrder = {
+      id: `ord-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      orderNumber,
+      userId: data.userId,
+      userName: data.userName,
+      userEmail: data.userEmail,
+      items: orderItems,
+      shippingAddress: data.shippingAddress,
+      paymentMethod: data.paymentMethod || 'Stripe',
+      paymentProvider: provider,
+      paymentStatus: 'Pending',
+      currency,
+      orderStatus: 'Pending',
+      subtotal,
+      shipping,
+      discount,
+      discountCode: data.discountCode,
+      tax,
+      total,
+      notes: data.notes,
+      timeline: [
+        {
+          status: 'Pending',
+          note: `Order initiated. Awaiting payment confirmation via ${provider}.`,
+          timestamp: new Date().toISOString(),
+          updatedBy: 'Checkout Service'
+        }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // Create initial Pending payment record
+    const paymentRecord: DbPaymentRecord = {
+      id: `pay-${newOrder.id}`,
+      orderId: newOrder.id,
+      orderNumber: newOrder.orderNumber,
+      customerName: newOrder.userName,
+      customerEmail: newOrder.userEmail,
+      amount: newOrder.total,
+      currency,
+      provider,
+      status: 'Pending',
+      transactionRef: `PENDING-${newOrder.orderNumber}`,
+      createdAt: newOrder.createdAt
+    };
+    this.data.payments.unshift(paymentRecord);
+
+    // Save pending order without deducting stock and without clearing cart
+    this.data.orders.unshift(newOrder);
+    this.save();
+    return newOrder;
+  }
+
+  public updateOrderPaymentSession(orderId: string, sessionId: string, paymentIntentId?: string): DbOrder | null {
+    const order = this.getOrderById(orderId);
+    if (!order) return null;
+    order.paymentSessionId = sessionId;
+    if (paymentIntentId) {
+      order.paymentIntentId = paymentIntentId;
+    }
+    const payRecord = this.data.payments.find(p => p.orderId === order.id || p.orderNumber === order.orderNumber);
+    if (payRecord) {
+      payRecord.paymentSessionId = sessionId;
+      if (paymentIntentId) payRecord.paymentIntentId = paymentIntentId;
+    }
+    order.updatedAt = new Date().toISOString();
+    this.save();
+    return order;
+  }
+
+  public confirmOrderPayment(
+    orderIdOrSessionId: string,
+    paymentData: {
+      transactionId?: string;
+      paymentIntentId?: string;
+      paymentSessionId?: string;
+      paidAt?: string;
+      amountPaid?: number;
+    }
+  ): DbOrder | null {
+    const order = this.data.orders.find(
+      o =>
+        o.id === orderIdOrSessionId ||
+        o.orderNumber === orderIdOrSessionId ||
+        (o.paymentSessionId && o.paymentSessionId === orderIdOrSessionId) ||
+        (o.paymentIntentId && o.paymentIntentId === orderIdOrSessionId)
+    );
+    if (!order) return null;
+
+    // Idempotency check: If already paid, do not re-reduce inventory!
+    if (order.paymentStatus === 'Paid') {
+      return order;
+    }
+
+    const paidAt = paymentData.paidAt || new Date().toISOString();
+    const transactionId = paymentData.transactionId || paymentData.paymentIntentId || `TXN-${order.orderNumber}`;
+
+    // 1. Atomic inventory reduction
+    for (const item of order.items) {
+      const prod = this.getProductById(item.productId);
+      if (prod) {
+        const prevStock = prod.stock;
+        prod.stock = Math.max(0, prod.stock - item.quantity);
+        prod.updatedAt = new Date().toISOString();
+
+        this.data.inventoryTransactions.unshift({
+          id: `txn-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          productId: prod.id,
+          productName: prod.name,
+          sku: prod.sku,
+          type: 'sold',
+          quantityChange: -item.quantity,
+          previousStock: prevStock,
+          newStock: prod.stock,
+          reason: `Confirmed Order #${order.orderNumber}`,
+          recordedBy: 'Stripe Payment Gateway',
+          createdAt: new Date().toISOString()
+        });
+
+        if (prod.stock <= (prod.lowStockThreshold || 5)) {
+          this.createNotification(
+            'stock',
+            prod.stock === 0 ? 'Out of Stock Alert' : 'Low Stock Warning',
+            `${prod.name} stock has reduced to ${prod.stock} after Order #${order.orderNumber}.`,
+            '/admin/inventory'
+          );
+        }
+      }
+    }
+
+    // 2. Update order status and payment fields
+    order.paymentStatus = 'Paid';
+    order.orderStatus = 'Processing';
+    order.paidAt = paidAt;
+    order.transactionId = transactionId;
+    if (paymentData.paymentIntentId) order.paymentIntentId = paymentData.paymentIntentId;
+    if (paymentData.paymentSessionId) order.paymentSessionId = paymentData.paymentSessionId;
+    order.updatedAt = new Date().toISOString();
+
+    order.timeline.unshift({
+      status: 'Paid',
+      note: `Payment successfully verified via ${order.paymentProvider || 'Stripe'}. Reference: ${transactionId}`,
+      timestamp: paidAt,
+      updatedBy: 'Payment Gateway'
+    });
+
+    // 3. Update payment record
+    const payRecord = this.data.payments.find(p => p.orderId === order.id || p.orderNumber === order.orderNumber);
+    if (payRecord) {
+      payRecord.status = 'Paid';
+      payRecord.transactionRef = transactionId;
+      payRecord.paidAt = paidAt;
+      if (paymentData.paymentSessionId) payRecord.paymentSessionId = paymentData.paymentSessionId;
+      if (paymentData.paymentIntentId) payRecord.paymentIntentId = paymentData.paymentIntentId;
+    }
+
+    // 4. Create admin notification
+    this.createNotification(
+      'order',
+      'Payment Confirmed',
+      `Payment of $${order.total} confirmed for Order #${order.orderNumber} via ${order.paymentProvider || 'Stripe'}.`,
+      '/admin/orders'
+    );
+
+    // 5. Clear customer's cart
+    this.clearCart(order.userId);
+
+    this.save();
+    return order;
+  }
+
+  public markOrderPaymentFailed(orderId: string, reason?: string): DbOrder | null {
+    const order = this.getOrderById(orderId);
+    if (!order) return null;
+    if (order.paymentStatus === 'Paid') return order; // Do not fail an already paid order
+
+    order.paymentStatus = 'Failed';
+    order.updatedAt = new Date().toISOString();
+    order.timeline.unshift({
+      status: 'Failed',
+      note: `Payment attempt failed: ${reason || 'Card declined or session expired'}.`,
+      timestamp: new Date().toISOString(),
+      updatedBy: 'Payment Gateway'
+    });
+
+    const payRecord = this.data.payments.find(p => p.orderId === order.id || p.orderNumber === order.orderNumber);
+    if (payRecord) {
+      payRecord.status = 'Failed';
+    }
+
+    this.save();
+    return order;
+  }
+
+  public markOrderPaymentCancelled(orderId: string): DbOrder | null {
+    const order = this.getOrderById(orderId);
+    if (!order) return null;
+    if (order.paymentStatus === 'Paid') return order;
+
+    order.paymentStatus = 'Cancelled';
+    order.updatedAt = new Date().toISOString();
+    order.timeline.unshift({
+      status: 'Cancelled',
+      note: 'Payment checkout session was cancelled. Customer may retry payment.',
+      timestamp: new Date().toISOString(),
+      updatedBy: 'Customer'
+    });
+
+    const payRecord = this.data.payments.find(p => p.orderId === order.id || p.orderNumber === order.orderNumber);
+    if (payRecord) {
+      payRecord.status = 'Cancelled';
+    }
+
+    this.save();
+    return order;
+  }
+
+  public isWebhookEventProcessed(eventId: string): boolean {
+    return this.data.processedWebhookEvents.some(e => e.eventId === eventId);
+  }
+
+  public recordWebhookEvent(eventId: string, provider: string, eventType: string): void {
+    if (!this.isWebhookEventProcessed(eventId)) {
+      this.data.processedWebhookEvents.unshift({
+        id: `pwe-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        eventId,
+        provider,
+        eventType,
+        processedAt: new Date().toISOString()
+      });
+      // Keep only last 1000 events to prevent memory bloat
+      if (this.data.processedWebhookEvents.length > 1000) {
+        this.data.processedWebhookEvents = this.data.processedWebhookEvents.slice(0, 1000);
+      }
+      this.save();
+    }
+  }
+
   public getOrdersByUserId(userId: string): DbOrder[] {
     return this.data.orders.filter(o => o.userId === userId);
   }
@@ -1889,7 +2221,7 @@ class VelourDatabase {
     return order;
   }
 
-  public refundOrder(id: string, refundAmount: number, reason: string, adminName?: string): DbOrder | null {
+  public refundOrder(id: string, refundAmount: number, reason: string, adminName?: string, refundId?: string): DbOrder | null {
     const order = this.getOrderById(id);
     if (!order) return null;
 
@@ -1897,12 +2229,37 @@ class VelourDatabase {
     order.paymentStatus = 'Refunded';
     order.refundAmount = refundAmount;
     order.refundReason = reason;
+    order.refundId = refundId;
     order.refundDate = new Date().toISOString();
     order.updatedAt = new Date().toISOString();
 
+    // Restock items safely and log inventory transactions
+    for (const item of order.items) {
+      const prod = this.getProductById(item.productId);
+      if (prod) {
+        const prevStock = prod.stock;
+        prod.stock += item.quantity;
+        prod.updatedAt = new Date().toISOString();
+
+        this.data.inventoryTransactions.unshift({
+          id: `txn-refund-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          productId: prod.id,
+          productName: prod.name,
+          sku: prod.sku,
+          type: 'returned',
+          quantityChange: item.quantity,
+          previousStock: prevStock,
+          newStock: prod.stock,
+          reason: `Restocked after Refund on Order #${order.orderNumber}`,
+          recordedBy: adminName || 'Admin Refund Service',
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+
     order.timeline.unshift({
       status: 'Refunded',
-      note: `Refund of $${refundAmount} issued. Reason: ${reason}`,
+      note: `Refund of $${refundAmount} issued${refundId ? ` (Ref: ${refundId})` : ''}. Reason: ${reason}`,
       timestamp: new Date().toISOString(),
       updatedBy: adminName || 'Admin'
     });
@@ -1914,6 +2271,7 @@ class VelourDatabase {
       payRecord.refundAmount = refundAmount;
       payRecord.refundReason = reason;
       payRecord.refundDate = order.refundDate;
+      payRecord.refundId = refundId;
     }
 
     this.save();

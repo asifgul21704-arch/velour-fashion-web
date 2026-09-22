@@ -162,11 +162,14 @@ export function PaymentsManager({ orders, onRefundOrder, onSelectOrder }: Paymen
           className="px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-xl text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
         >
           <option value="all">All Payment Methods</option>
+          <option value="Cash on Delivery">Cash on Delivery</option>
+          <option value="SadaPay">SadaPay</option>
+          <option value="JazzCash">JazzCash</option>
+          <option value="EasyPaisa">EasyPaisa</option>
+          <option value="NayaPay">NayaPay</option>
           <option value="Credit Card">Credit Card</option>
+          <option value="Bank Transfer">Bank Transfer</option>
           <option value="Stripe">Stripe Gateway</option>
-          <option value="Apple Pay">Apple Pay</option>
-          <option value="PayPal">PayPal</option>
-          <option value="COD">Cash on Delivery</option>
         </select>
       </div>
 
