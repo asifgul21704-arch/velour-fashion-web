@@ -12,7 +12,10 @@ dotenv.config();
 
 const app = express();
 const PORT = 3000;
-const AUTH_SECRET = process.env.AUTH_SECRET || 'velour-super-secret-jwt-key-change-in-production';
+const AUTH_SECRET = process.env.AUTH_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'local-development-only-change-me');
+if (!AUTH_SECRET) {
+  throw new Error('AUTH_SECRET must be configured before starting in production.');
+}
 const COOKIE_NAME = 'velour_token';
 const paymentProvider = getPaymentProvider();
 
